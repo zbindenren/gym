@@ -190,10 +190,8 @@ func checksumOK(pathToFile string, checksumType string, checksum string) bool {
 func ellipsis(s string, max int) string {
 	if len(s) <= max {
 		return s + strings.Repeat(".", max-len(s))
-	} else {
-		return s[:max]
 	}
-
+	return s[:max]
 }
 
 func createExitOnCritHandler() log15.Handler {

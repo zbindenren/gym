@@ -34,11 +34,13 @@ func init() {
 	Log.SetHandler(log15.MultiHandler(lh, createExitOnCritHandler()))
 }
 
+// NoColor disables color log output
 func NoColor() {
 	logFormat = log15.LogfmtFormat()
 	updateLogger()
 }
 
+// Debug enables debug messages
 func Debug() {
 	logLevel = log15.LvlDebug
 	updateLogger()
