@@ -53,7 +53,7 @@ func TestSyncFromRepofile(t *testing.T) {
 		t.Errorf("got %d repos, wanted %d repos", len(repos), 1)
 	}
 	r := repos[0]
-	url := "http://ftp.linux.cz/pub/linux/fedora/linux/releases/$releaseve22/Server/x86_64/os"
+	url := "http://ftp.linux.cz/pub/linux/fedora/linux/releases/22/Server/x86_64/os"
 	if r.RemoteURL != url {
 		t.Errorf("got url %s, should be %s", r.RemoteURL, url)
 

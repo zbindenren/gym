@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -98,7 +99,7 @@ func main() {
 	})
 	gymcmd.Command("repo", "sync repoository form yum repository file", func(cmd *cli.Cmd) {
 
-		cmd.Spec = "[[--exclude] [--enabled] | --repoid] [--arch] [-f] -r REPOFILE DESTINATION"
+		cmd.Spec = "[([--exclude] [--enabled]) | ([--repoid] [--name])] [--arch] [-f] -r REPOFILE DESTINATION"
 
 		var (
 			filter  = cmd.String(cli.StringOpt{Name: "f filter", Desc: "sync only packages with names containing filter string"})
@@ -107,6 +108,7 @@ func main() {
 			arch    = cmd.String(cli.StringOpt{Name: "arch", Value: "x86_64", Desc: "base architecture e.g: x86_64, PPC"})
 			release = cmd.String(cli.StringOpt{Name: "r release", Desc: "release version e.g: Server7, 7.1"})
 			repoid  = cmd.String(cli.StringOpt{Name: "repoid", Desc: "only sync repository with name repoid"})
+			name    = cmd.String(cli.StringOpt{Name: "name", Desc: "use name instead of repoid as directory name"})
 		)
 
 		var (
@@ -137,6 +139,7 @@ func main() {
 				"repo", *repo,
 				"repoid", *repoid,
 				"destination", *dest,
+				"name", *name,
 			)
 
 			start := time.Now()
@@ -170,6 +173,10 @@ func main() {
 							continue Loop
 						}
 					}
+				}
+				if len(*name) > 0 {
+					re.Name = *name
+					re.LocalPath = path.Join(path.Dir(re.LocalPath), "/", *name)
 				}
 				gym.Log.Info("matadata sync", "name", re.Name)
 				if err := re.SyncMeta(); err != nil {
