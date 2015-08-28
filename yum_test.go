@@ -4,14 +4,13 @@ package gym
 
 import (
 	"os"
+	"path"
 	"testing"
 )
 
-func TestMain(m *testing.M) {
-	retCode := m.Run()
-	teardown()
-	os.Exit(retCode)
-}
+var (
+	snapshotDir = "/tmp/snapshot"
+)
 
 func TestLsMeta(t *testing.T) {
 	repo := "http://mirror.centos.org/centos/7/os/x86_64"
@@ -60,7 +59,51 @@ func TestSyncFromRepofile(t *testing.T) {
 	}
 }
 
-func teardown() {
-	os.RemoveAll("/tmp/repo")
-	os.Remove("/tmp/LibRaw-0.14.8-5.el7.20120830git98d925.x86_64.rpm")
+func TestSnapshotCopy(t *testing.T) {
+	defer teardown()
+	r := NewRepo("./testdata/repo", "", nil)
+	if err := r.Snapshot(snapshotDir, false, true, 1); err != nil {
+		t.Error(err)
+	}
+	filenames := []string{path.Join(snapshotDir, "repo/repodata/repomd.xml"), path.Join(snapshotDir, "repo/Packages/GeoIP-devel-1.5.0-9.el7.i686.rpm")}
+	for _, filename := range filenames {
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			t.Errorf("snapshot create failed, file %s does not exist", filename)
+		}
+	}
+}
+
+func TestSnapshotLink(t *testing.T) {
+	defer teardown()
+	r := NewRepo("./testdata/repo", "", nil)
+	if err := r.Snapshot(snapshotDir, true, false, 1); err != nil {
+		t.Error(err)
+	}
+	filenames := []string{path.Join(snapshotDir, "repo/repodata/repomd.xml"), path.Join(snapshotDir, "repo/Packages/GeoIP-devel-1.5.0-9.el7.i686.rpm")}
+	for _, filename := range filenames {
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			t.Errorf("snapshot create failed, file %s does not exist", filename)
+		}
+	}
+}
+
+func TestSnapshotInvalidSource(t *testing.T) {
+	invalidRepos := []string{"./testdata", "/does/not/exist"}
+	for _, repo := range invalidRepos {
+		r := NewRepo(repo, "", nil)
+		if err := r.Snapshot(snapshotDir, false, true, 1); err == nil {
+			t.Errorf("%s is not a valid repository, but no error produced", repo)
+		}
+	}
+}
+
+func TestSnapshotDestExists(t *testing.T) {
+	defer teardown()
+	r := NewRepo("./testdata/repo", "", nil)
+	if err := r.Snapshot(snapshotDir, false, true, 1); err != nil {
+		t.Error(err)
+	}
+	if err := r.Snapshot(snapshotDir, false, true, 1); err == nil {
+		t.Errorf("destination %s already exists, but no error produced", path.Join(snapshotDir, "repo"))
+	}
 }

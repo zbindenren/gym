@@ -19,7 +19,6 @@ var gitDateString = "<nil"
 var buildDateString = "<nil>"
 
 func main() {
-	version := fmt.Sprintf("%s (%v)", gitHashString, runtime.Version())
 	numCPU := runtime.NumCPU()
 	gymcmd := cli.App("gym", "golang yum mirror")
 	debug := gymcmd.Bool(cli.BoolOpt{Name: "d debug", Desc: "show debug messages"})
@@ -27,11 +26,7 @@ func main() {
 	nocolor := gymcmd.Bool(cli.BoolOpt{Name: "n nocolor", Desc: "disable color output"})
 	insecure := gymcmd.Bool(cli.BoolOpt{Name: "i insecure", Desc: "do not verify ssl certificates"})
 	workers := gymcmd.Int(cli.IntOpt{Name: "w workers", Value: numCPU, Desc: "number of parallel download workers"})
-	v := gymcmd.Bool(cli.BoolOpt{Name: "v version", Desc: "show version"})
 	gymcmd.Action = func() {
-		if *v {
-			fmt.Println(version)
-		}
 	}
 	gymcmd.Command("url", "sync repoository form url", func(cmd *cli.Cmd) {
 		cmd.Spec = "[--cert --key] [--cacerts] [-f] URL DESTINATION"
@@ -56,7 +51,7 @@ func main() {
 				gym.NoColor()
 			}
 			gym.Log.Info("starting sync",
-				"version", version,
+				"version", gitHashString,
 				"mode", "url",
 				"debug", *debug,
 				"nocolor", *nocolor,
@@ -124,7 +119,7 @@ func main() {
 				gym.NoColor()
 			}
 			gym.Log.Info("starting sync",
-				"version", version,
+				"version", gitHashString,
 				"mode", "repo",
 				"debug", *debug,
 				"nocolor", *nocolor,
@@ -204,6 +199,66 @@ func main() {
 
 		}
 	})
+
+	gymcmd.Command("snapshot", "create snapshot of exsiting yum repository", func(cmd *cli.Cmd) {
+		cmd.Spec = "[-c] [-l] SOURCE... DESTINATION"
+		var (
+			link       = cmd.Bool(cli.BoolOpt{Name: "link l", Desc: "create symlinks instead of copy"})
+			createRepo = cmd.Bool(cli.BoolOpt{Name: "createrepo c", Desc: "run create repo"})
+		)
+		var (
+			sources = cmd.Strings(cli.StringsArg{Name: "SOURCE", Value: []string{}, Desc: "path to the yum repository file"})
+			dest    = cmd.String(cli.StringArg{Name: "DESTINATION", Value: "", Desc: "local destination directory"})
+		)
+		cmd.Action = func() {
+			if *debug {
+				gym.Debug()
+			}
+			if *nocolor {
+				gym.NoColor()
+			}
+			gym.Log.Info("starting snapshot",
+				"version", gitHashString,
+				"mode", "snapshot",
+				"debug", *debug,
+				"nocolor", *nocolor,
+				"workers", *workers,
+				"destination", *dest,
+				"createLinks", *link,
+				"createrepo", *createRepo,
+				"sources", strings.Join(*sources, ", "),
+			)
+			start := time.Now()
+			failedSources := []string{}
+			for _, source := range *sources {
+				r := gym.NewRepo(source, "", nil)
+				if err := r.Snapshot(*dest, *link, *createRepo, *workers); err != nil {
+					failedSources = append(failedSources, source)
+					gym.Log.Warn("could not create snapshot", "err", err)
+				}
+			}
+			gym.Log.Info("finish",
+				"duration", time.Since(start),
+				"failedSources", len(failedSources),
+			)
+		}
+	})
+
+	gymcmd.Command("version", "show version info", func(cmd *cli.Cmd) {
+		cmd.Spec = "[-d]"
+		var (
+			detail = cmd.Bool(cli.BoolOpt{Name: "d detail", Desc: "show detail version info"})
+		)
+		cmd.Action = func() {
+			v := fmt.Sprintf("%s (%v", gitHashString, runtime.Version())
+			if *detail {
+				v = v + fmt.Sprintf(" - build date: %s, commit date: %s", buildDateString, gitDateString)
+			}
+			v = v + ")"
+			fmt.Println(v)
+		}
+	})
+
 	if err := gymcmd.Run(os.Args); err != nil {
 		fmt.Println(err)
 	}

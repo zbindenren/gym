@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/inconshreveable/log15.v2"
@@ -202,4 +203,37 @@ func createExitOnCritHandler() log15.Handler {
 		return false
 	}, log15.StdoutHandler)
 	return h
+}
+
+func copyFile(source, dest string) error {
+	s, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	d, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(d, s); err != nil {
+		d.Close()
+		return err
+	}
+	return d.Close()
+}
+
+func copyDir(source, dest string) error {
+	filepath.Walk(source, func(currentPath string, info os.FileInfo, _ error) error {
+		destPath := path.Join(dest, currentPath[len(path.Dir(source)):])
+		if info.IsDir() {
+			Log.Debug("creating directory", "path", destPath)
+			if err := os.Mkdir(destPath, info.Mode()); err != nil {
+				return err
+			}
+			return nil
+		}
+		Log.Debug("copy file", "source", currentPath, "dest", destPath)
+		return copyFile(currentPath, destPath)
+	})
+	return nil
 }

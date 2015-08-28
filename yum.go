@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3" // sql driver for sql db
-
+	_ "github.com/mattn/go-sqlite3"
+	// sql driver for sql db
 	"gopkg.in/inconshreveable/log15.v2"
 	"gopkg.in/ini.v1"
 )
@@ -157,7 +159,7 @@ func (r *Repo) Sync(filter string, numWorkers int) error {
 		}
 	}
 
-	if err := <-r.errorc; err != nil { // HLerrc
+	if err := <-r.errorc; err != nil {
 		return err
 	}
 	return nil
@@ -203,6 +205,73 @@ func (r *Repo) SyncMeta() error {
 	}
 	return nil
 }
+func (r *Repo) Snapshot(dest string, link bool, createRepo bool, numWorkers int) error {
+	if _, err := os.Stat(path.Join(r.LocalPath, "repodata/repomd.xml")); err != nil {
+		return fmt.Errorf("%s is not a valid repository, repomd.xml does not exist", r.LocalPath)
+	}
+	destination := path.Join(dest, path.Base(r.LocalPath))
+	if _, err := os.Stat(destination); err == nil {
+		return fmt.Errorf("destination %s already exists", destination)
+	}
+
+	if err := r.rpmList(""); err != nil {
+		return err
+	}
+	Log.Info("creating snapshot", "name", r.Name, "src", r.LocalPath, "dest", destination)
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		go func(id int) {
+			r.snapshotWorker(destination, link, id)
+			wg.Done()
+		}(i + 1)
+	}
+
+	go func() {
+		wg.Wait()
+		close(r.resultc)
+	}()
+
+	mode := "copy"
+	if link {
+		mode = "link"
+	}
+	for res := range r.resultc {
+		if res.err != nil {
+			Log.Error(path.Base(res.rpm.relPath), "status", res.status, "workerid", res.workerID, "err", res.err)
+		} else {
+			Log.Info(ellipsis(path.Base(res.rpm.relPath), 40), "mode", mode, "err", res.err, "workerid", res.workerID)
+		}
+	}
+
+	if err := <-r.errorc; err != nil {
+		return err
+	}
+	if !createRepo {
+		return copyDir(path.Join(r.LocalPath, "repodata"), destination)
+	}
+
+	cmdString, err := exec.LookPath("createrepo")
+	if err != nil {
+		return err
+	}
+	metaFiles, err := r.lsMeta()
+	if err != nil {
+		return err
+	}
+	args := []string{"-d"}
+	if meta, ok := metaFiles.get("group"); ok {
+		args = append(args, path.Join(r.LocalPath, meta.href))
+	}
+	args = append(args, destination)
+	cmd := exec.Command(cmdString, args...)
+	out, err := cmd.CombinedOutput()
+	Log.Debug("run create repo", "cmd", strings.Join(cmd.Args, " "), "out", string(out))
+	if err != nil {
+		return fmt.Errorf("create repo failed, err: %s, output: %s", err, string(out))
+	}
+	return nil
+}
 
 // rpmList reads the available rpms from sqlite db and puts the RPM in a channel for later processing
 func (r *Repo) rpmList(filter string) error {
@@ -222,7 +291,7 @@ func (r *Repo) rpmList(filter string) error {
 
 }
 
-// rpmList reads the available rpms from sqlite db and puts the RPM in a channel for later processing
+// rpmListFromSqlite reads the available rpms from sqlite db and puts the RPM in a channel for later processing
 func (r *Repo) rpmListFromSqlite(filter string, primary metaFile) error {
 	r.rpmc = make(chan *rpm)
 	r.errorc = make(chan error, 1)
@@ -277,7 +346,7 @@ func (r *Repo) rpmListFromSqlite(filter string, primary metaFile) error {
 	return nil
 }
 
-// rpmList reads the available rpms from xml and puts the RPM in a channel for later processing
+// rpmListFromXML reads the available rpms from xml and puts the RPM in a channel for later processing
 func (r *Repo) rpmListFromXML(filter string, primary metaFile) error {
 	r.rpmc = make(chan *rpm)
 	r.errorc = make(chan error, 1)
@@ -406,6 +475,46 @@ func (r *Repo) downloadWorker(id int) {
 			return
 		}
 	}
+}
+
+func (r *Repo) snapshotWorker(dest string, link bool, id int) {
+	i := 0
+	for rpm := range r.rpmc {
+		i++
+		err := r.copyOrLink(dest, rpm, link)
+		res := newResult(rpm, id, 0, err)
+		select {
+		case r.resultc <- res:
+		case <-r.done:
+			Log.Info("snapshot canceled")
+			return
+		}
+	}
+}
+
+func (r *Repo) copyOrLink(destDir string, rpm *rpm, link bool) error {
+	source := path.Join(r.LocalPath, rpm.relPath)
+	destPath := path.Join(destDir, rpm.relPath)
+	if err := os.MkdirAll(path.Dir(destPath), 0755); err != nil {
+		return err
+	}
+	if link {
+		sourceAbs, err := filepath.Abs(source)
+		if err != nil {
+			return err
+		}
+		Log.Debug("link rpm", "source", source, "dest", destPath)
+		return os.Symlink(sourceAbs, destPath)
+	}
+	// copy rpm
+	Log.Debug("copy rpm", "source", source, "dest", destPath)
+	if err := copyFile(source, destPath); err != nil {
+		return err
+	}
+	if !checksumOK(destPath, rpm.checksumType, rpm.checksum) {
+		return errors.New("checksum missmatch")
+	}
+	return nil
 }
 
 func (r *Repo) lsMeta() (metaFiles, error) {

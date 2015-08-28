@@ -1,6 +1,16 @@
 package gym
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestMain(m *testing.M) {
+	retCode := m.Run()
+	teardown()
+	os.Exit(retCode)
+}
 
 func TestCountResult(t *testing.T) {
 	count, err := countResult("testdata/centos7-primary.sqlite", "")
@@ -58,4 +68,38 @@ func TestEllipsis(t *testing.T) {
 	if ellipsis(nokString, max) != "" {
 		t.Errorf("expected value %s, got %s", "", ellipsis(nokString, max))
 	}
+}
+
+func TestCopyDirAbs(t *testing.T) {
+	fullPath, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := copyDir(fullPath, "/tmp"); err != nil {
+		t.Errorf("error occured while copy directory: %s", err)
+	}
+	filename := "testdata/emptysqlite/repodata/2183a672a39f9be7cb052b2ade31911cc63731c0-filelists.xml.gz"
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		t.Errorf("copy dir failed, file %s does not exist", filename)
+	}
+}
+
+func TestCopyDirRel(t *testing.T) {
+	fullPath := "testdata"
+
+	if err := copyDir(fullPath, "/tmp"); err != nil {
+		t.Errorf("error occured while copy directory: %s", err)
+	}
+	filename := "testdata/emptysqlite/repodata/2183a672a39f9be7cb052b2ade31911cc63731c0-filelists.xml.gz"
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		t.Errorf("copy dir failed, file %s does not exist", filename)
+	}
+}
+
+func teardown() {
+	os.RemoveAll("/tmp/repo")
+	os.RemoveAll(snapshotDir)
+	os.RemoveAll("/tmp/testdata")
+	os.Remove("/tmp/LibRaw-0.14.8-5.el7.20120830git98d925.x86_64.rpm")
 }
