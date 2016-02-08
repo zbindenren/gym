@@ -234,7 +234,7 @@ func main() {
 				r := gym.NewRepo(source, "", nil)
 				if err := r.Snapshot(*dest, *link, *createRepo, *workers); err != nil {
 					failedSources = append(failedSources, source)
-					gym.Log.Warn("could not create snapshot", "err", err)
+					gym.Log.Crit("could not create snapshot", "err", err)
 				}
 			}
 			gym.Log.Info("finish",
