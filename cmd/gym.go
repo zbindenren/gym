@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/jawher/mow.cli"
+	cli "github.com/jawher/mow.cli"
 	"github.com/zbindenren/gym"
 )
 
@@ -257,6 +259,57 @@ func main() {
 			v = v + ")"
 			fmt.Println(v)
 		}
+	})
+
+	gymcmd.Command("iso", "download iso", func(cmd *cli.Cmd) {
+		cmd.Spec = "--repoid --release [--arch] REPOFILE DESTINATION"
+		var (
+			arch    = cmd.String(cli.StringOpt{Name: "arch", Value: "x86_64", Desc: "base architecture e.g: x86_64, PPC"})
+			release = cmd.String(cli.StringOpt{Name: "release", Desc: "release version e.g: Server7, 7.1"})
+			repoid  = cmd.String(cli.StringOpt{Name: "repoid", Value: "rhel-7-server-rpms", Desc: "repo id where the boot iso can be downloaded"})
+		)
+		var (
+			repo = cmd.String(cli.StringArg{Name: "REPOFILE", Value: "/etc/yum.repos.d/redhat.repo", Desc: "path to the yum repository file"})
+			dest = cmd.String(cli.StringArg{Name: "DESTINATION", Value: "/tmp", Desc: "local destination directory"})
+		)
+		cmd.Action = func() {
+			gym.Log.Info("parsing repofile", "file", *repo)
+			repos, err := gym.NewRepoList(*repo, *dest, *insecure, *release, *arch)
+			if err != nil {
+				gym.Log.Crit("could not create repolist", "repofile", *repo, "err", err)
+			}
+
+			r := repos.Find(*repoid)
+			if r == nil {
+				gym.Log.Crit("could not find repoid", "repoid", *repoid)
+			}
+			isoFileName := fmt.Sprintf("rhel-server-%s-%s-boot.iso", *release, *arch)
+			url := fmt.Sprintf("https://cdn.redhat.com/content/dist/rhel/server/%s/%sServer/%s/iso/%s", string((*release)[0]), string((*release)[0]), *arch, isoFileName)
+
+			tmpDir, err := ioutil.TempDir("", "gym")
+			if err != nil {
+				gym.Log.Crit("could not create tmp directory", "path", tmpDir)
+			}
+			defer os.RemoveAll(tmpDir)
+			tmpfile := path.Join(tmpDir, isoFileName)
+
+			gym.Log.Info("download boot iso", "url", url, "dest", tmpfile)
+			_, err = r.Download(url, tmpfile)
+			if err != nil {
+				gym.Log.Crit("could not download", "url", url, "dest", tmpfile, "err", err)
+			}
+
+			cmd := exec.Command("7z", "e", "-y", "-r", "-o"+*dest, tmpfile)
+			err = os.MkdirAll(*dest, 0755)
+			if err != nil {
+				gym.Log.Crit("could not create directory", "path", *dest)
+			}
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				gym.Log.Crit("could not run command", "cmd", strings.Join(cmd.Args, " "), "err", err, "out", string(out))
+			}
+		}
+
 	})
 
 	if err := gymcmd.Run(os.Args); err != nil {

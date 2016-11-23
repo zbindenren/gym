@@ -59,7 +59,7 @@ type Repo struct {
 	RemoteURL  string
 	Name       string
 	Enabled    bool
-	client     *http.Client
+	Client     *http.Client
 	rpmc       chan *rpm
 	resultc    chan *result
 	errorc     chan error
@@ -77,7 +77,7 @@ func NewRepo(local string, remote string, transport *http.Transport) *Repo {
 		client = &http.Client{Transport: transport}
 	}
 	repo := Repo{
-		client:    client,
+		Client:    client,
 		LocalPath: l,
 		RemoteURL: r,
 		resultc:   make(chan *result),
@@ -88,6 +88,16 @@ func NewRepo(local string, remote string, transport *http.Transport) *Repo {
 
 // RepoList represents a list of yum repositories
 type RepoList []Repo
+
+// Find returns Repo with Name name
+func (rl RepoList) Find(name string) *Repo {
+	for _, r := range rl {
+		if r.Name == name {
+			return &r
+		}
+	}
+	return nil
+}
 
 // NewRepoList creates an new RepoList
 func NewRepoList(pathToYumConf string, dest string, insecure bool, release string, baseArch string) (RepoList, error) {
@@ -205,6 +215,7 @@ func (r *Repo) SyncMeta() error {
 	}
 	return nil
 }
+
 func (r *Repo) Snapshot(dest string, link bool, createRepo bool, numWorkers int) error {
 	if _, err := os.Stat(path.Join(r.LocalPath, "repodata/repomd.xml")); err != nil {
 		return fmt.Errorf("%s is not a valid repository, repomd.xml does not exist", r.LocalPath)
@@ -398,15 +409,27 @@ func (r *Repo) rpmListFromXML(filter string, primary metaFile) error {
 // download url and verify checksum of downloaded file, if shaType is empty no verification is done
 func (r *Repo) download(url string, dest string, checksum string, shaType string) (int64, error) {
 	Log.Debug(ellipsis(path.Base(url), 40), "destdir", path.Dir(dest), "sumType", shaType, "checksum", checksum)
-	if err := os.MkdirAll(path.Dir(dest), 0755); err != nil {
-		return 0, err
-	}
-
 	if _, err := os.Stat(dest); err == nil {
 		if len(shaType) > 0 && checksumOK(dest, shaType, checksum) {
 			return 0, nil
 		}
 	}
+	size, err := r.Download(url, dest)
+	if err != nil {
+		return 0, err
+	}
+	if !checksumOK(dest, shaType, checksum) {
+		return size, errors.New("checksum missmatch")
+	}
+	return size, nil
+}
+
+// download url and verify checksum of downloaded file, if shaType is empty no verification is done
+func (r *Repo) Download(url string, dest string) (int64, error) {
+	if err := os.MkdirAll(path.Dir(dest), 0755); err != nil {
+		return 0, err
+	}
+
 	out, err := os.Create(dest)
 	if err != nil {
 		return 0, err
@@ -417,7 +440,7 @@ func (r *Repo) download(url string, dest string, checksum string, shaType string
 		return 0, err
 	}
 	req.Header.Add("Accept-Encoding", "gzip") //otherwise the client decompresses *.gz files, that is not what we want
-	resp, err := r.client.Do(req)
+	resp, err := r.Client.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -428,9 +451,6 @@ func (r *Repo) download(url string, dest string, checksum string, shaType string
 	size, err := io.Copy(out, resp.Body)
 	if err != nil {
 		return 0, err
-	}
-	if !checksumOK(dest, shaType, checksum) {
-		return size, errors.New("checksum missmatch")
 	}
 	return size, nil
 }
