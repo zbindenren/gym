@@ -96,11 +96,12 @@ func main() {
 	})
 	gymcmd.Command("repo", "sync repoository form yum repository file", func(cmd *cli.Cmd) {
 
-		cmd.Spec = "[([--exclude] [--enabled]) | ([--repoid] [--name])] [--arch] [-f] -r REPOFILE DESTINATION"
+		cmd.Spec = "[([--exclude]  [--include] [--enabled]) | ([--repoid] [--name])] [--arch] [-f] -r REPOFILE DESTINATION"
 
 		var (
 			filter  = cmd.String(cli.StringOpt{Name: "f filter", Desc: "sync only packages with names containing filter string"})
 			exclude = cmd.String(cli.StringOpt{Name: "exclude", Desc: "exclude repositories containing this string"})
+			include = cmd.String(cli.StringOpt{Name: "include", Desc: "include repositories containing this string"})
 			enabled = cmd.Bool(cli.BoolOpt{Name: "enabled", Desc: "sync only enabled repositories"})
 			arch    = cmd.String(cli.StringOpt{Name: "arch", Value: "x86_64", Desc: "base architecture e.g: x86_64, PPC"})
 			release = cmd.String(cli.StringOpt{Name: "r release", Desc: "release version e.g: Server7, 7.1"})
@@ -165,6 +166,16 @@ func main() {
 					for _, excludeString := range excludedRepoList {
 						gym.Log.Info(fmt.Sprintf("%v", excludedRepoList))
 						if strings.Contains(re.Name, excludeString) {
+							skippedRepositories = append(skippedRepositories, re.Name)
+							gym.Log.Info("skipping repository", "name", re.Name, "reason", "excluded")
+							continue Loop
+						}
+					}
+				}
+				if len(*include) > 0 {
+					includedRepoList := strings.Split(*include, ",")
+					for _, includeString := range includedRepoList {
+						if !strings.Contains(re.Name, includeString) {
 							skippedRepositories = append(skippedRepositories, re.Name)
 							gym.Log.Info("skipping repository", "name", re.Name, "reason", "excluded")
 							continue Loop
