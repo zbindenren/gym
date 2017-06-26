@@ -13,18 +13,41 @@ build: &build
   desc: build gym binary
   sources:
     - cmd/main.go
-    - '*.go'
+    - './*.go'
   generates:
     - dist/gym
   cmds:
     - go build -ldflags "-s -w" -o dist/gym cmd/gym.go
 
-build-static:
-  <<: *build
-  desc: build static linked gym binary
+install:
+  deps:
+    - build
+  sources:
+    - dist/gym
   generates:
-    - dist/gym-static
-  env:
-    CGO_ENABLED: 0
+    - "{{.PACKAGE_INSTALL_PREFIX}}/usr/bin/gym"
   cmds:
-    - go build -a -tags netgo -installsuffix netgo -ldflags "-d -s -w" -o dist/gym-static cmd/gym.go
+    - install -D -m 755 dist/gym {{.PACKAGE_INSTALL_PREFIX}}/usr/bin/gym
+
+rpm:
+   deps:
+     - install
+   sources:
+     - "{{.PACKAGE_INSTALL_PREFIX}}/usr/bin/gym"
+   generates:
+     - task-{{.PACKAGE_VERSION}}*.rpm
+   cmds:
+     - |
+       fpm -s dir -t rpm -v {{.PACKAGE_VERSION}} \
+       -n {{.NAME}} \
+       --url {{.URL}} \
+       --category {{.PACKAGE_GROUP}} \
+       --iteration {{.GIT_REVCOUNT}}.el{{.OS_VERSION}} \
+       --description "{{.PACKAGE_SUMMARY}}" \
+       -C {{.PACKAGE_INSTALL_PREFIX}}
+
+clean:
+  - rm -f *.rpm
+  - rm -rf root
+  - rm -rf vendor
+  - rm -rf dist

@@ -1,0 +1,8 @@
+NAME: gym
+URL: https://github.com/zbindenren/gym
+PACKAGE_VERSION: 1.0.0
+PACKAGE_INSTALL_PREFIX: root
+PACKAGE_GROUP: System/Tools
+PACKAGE_SUMMARY: Golang YUM Mirror
+OS_VERSION: $/usr/bin/lsb_release -r -s |cut -d. -f 1
+GIT_REVCOUNT: $git rev-list HEAD --count
