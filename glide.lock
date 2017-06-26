@@ -1,0 +1,29 @@
+hash: 695bed7f6b757d4df6f7c01d4a4055fbc7cc66b5dc677852626c9af82506339a
+updated: 2017-06-26T15:07:08.092374053+02:00
+imports:
+- name: github.com/jawher/mow.cli
+  version: 8327d12beb75e6471b7f045588acc318d1147146
+- name: github.com/mattn/go-colorable
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+- name: github.com/mattn/go-isatty
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/mattn/go-sqlite3
+  version: ca5e3819723d8eeaf170ad510e7da1d6d2e94a08
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 9c60d1c508f5134d1ca726b4641db998f2523357
+  subpackages:
+  - unix
+- name: gopkg.in/inconshreveable/log15.v2
+  version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
+  subpackages:
+  - stack
+  - term
+- name: gopkg.in/ini.v1
+  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+- name: xi2.org/x/xz
+  version: 19aeb13c4e7cb6bd3188dfede73840f33455425a
+testImports: []

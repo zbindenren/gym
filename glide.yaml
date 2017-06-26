@@ -1,0 +1,10 @@
+package: github.com/zbindenren/gym
+import:
+- package: github.com/jawher/mow.cli
+- package: github.com/mattn/go-sqlite3
+  version: ~1.2.0
+- package: gopkg.in/inconshreveable/log15.v2
+  version: ~2.11.0
+- package: gopkg.in/ini.v1
+  version: ~1.28.0
+- package: xi2.org/x/xz
