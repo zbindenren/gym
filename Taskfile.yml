@@ -47,7 +47,8 @@ rpm:
        -C {{.PACKAGE_INSTALL_PREFIX}}
 
 clean:
-  - rm -f *.rpm
-  - rm -rf root
-  - rm -rf vendor
-  - rm -rf dist
+  cmds:
+    - rm -f *.rpm
+    - rm -rf root
+    - rm -rf vendor
+    - rm -rf dist
