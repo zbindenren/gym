@@ -1,0 +1,30 @@
+deps:
+  cmds:
+    - glide install
+  generates:
+    - vendor/
+  sources:
+    - glide.yaml
+    - glide.lock
+
+build: &build
+  deps:
+    - deps
+  desc: build gym binary
+  sources:
+    - cmd/main.go
+    - '*.go'
+  generates:
+    - dist/gym
+  cmds:
+    - go build -ldflags "-s -w" -o dist/gym cmd/gym.go
+
+build-static:
+  <<: *build
+  desc: build static linked gym binary
+  generates:
+    - dist/gym-static
+  env:
+    CGO_ENABLED: 0
+  cmds:
+    - go build -a -tags netgo -installsuffix netgo -ldflags "-d -s -w" -o dist/gym-static cmd/gym.go
