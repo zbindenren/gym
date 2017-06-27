@@ -439,7 +439,7 @@ func (r *Repo) Download(url string, dest string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Add("Accept-Encoding", "gzip") //otherwise the client decompresses *.gz files, that is not what we want
+	// req.Header.Add("Accept-Encoding", "gzip") //otherwise the client decompresses *.gz files, that is not what we want
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		return 0, err
