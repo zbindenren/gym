@@ -165,13 +165,18 @@ func (r *Repo) Sync(filter string, numWorkers int) error {
 			}
 			if res.err != nil {
 			}
-			Log.Info(ellipsis(path.Base(res.rpm.relPath), 40), "status", res.status, "err", res.err, "progress", fmt.Sprintf(progressMsg, progress), "numBytes", res.bytesDownloaded, "workerid", res.workerID)
+			if res.status == "cached" {
+				Log.Debug(ellipsis(path.Base(res.rpm.relPath), 40), "status", res.status, "err", res.err, "progress", fmt.Sprintf(progressMsg, progress), "numBytes", res.bytesDownloaded, "workerid", res.workerID)
+			} else {
+				Log.Info(ellipsis(path.Base(res.rpm.relPath), 40), "status", res.status, "err", res.err, "progress", fmt.Sprintf(progressMsg, progress), "numBytes", res.bytesDownloaded, "workerid", res.workerID)
+			}
 		}
 	}
 
 	if err := <-r.errorc; err != nil {
 		return err
 	}
+	Log.Info("finished rpm sync", "name", r.Name)
 	return nil
 }
 
