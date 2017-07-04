@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	// sql driver for sql db
@@ -221,11 +222,14 @@ func (r *Repo) SyncMeta() error {
 	return nil
 }
 
-func (r *Repo) Snapshot(dest string, link bool, createRepo bool, numWorkers int) error {
+func (r *Repo) Snapshot(dest string, timestamp, link bool, createRepo bool, numWorkers int) error {
 	if _, err := os.Stat(path.Join(r.LocalPath, "repodata/repomd.xml")); err != nil {
 		return fmt.Errorf("%s is not a valid repository, repomd.xml does not exist", r.LocalPath)
 	}
 	destination := path.Join(dest, path.Base(r.LocalPath))
+	if timestamp {
+		destination = path.Join(destination, time.Now().Format("20060102"))
+	}
 	if _, err := os.Stat(destination); err == nil {
 		return fmt.Errorf("destination %s already exists", destination)
 	}

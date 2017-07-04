@@ -214,10 +214,11 @@ func main() {
 	})
 
 	gymcmd.Command("snapshot", "create snapshot of exsiting yum repository", func(cmd *cli.Cmd) {
-		cmd.Spec = "[-c] [-l] SOURCE... DESTINATION"
+		cmd.Spec = "[-c] [-l] [-t] SOURCE... DESTINATION"
 		var (
 			link       = cmd.Bool(cli.BoolOpt{Name: "link l", Desc: "create symlinks instead of copy"})
 			createRepo = cmd.Bool(cli.BoolOpt{Name: "createrepo c", Desc: "run create repo"})
+			timestamp  = cmd.Bool(cli.BoolOpt{Name: "timestamp t", Desc: "append timestamp"})
 		)
 		var (
 			sources = cmd.Strings(cli.StringsArg{Name: "SOURCE", Value: []string{}, Desc: "path to the yum repository file"})
@@ -245,7 +246,7 @@ func main() {
 			failedSources := []string{}
 			for _, source := range *sources {
 				r := gym.NewRepo(source, "", nil)
-				if err := r.Snapshot(*dest, *link, *createRepo, *workers); err != nil {
+				if err := r.Snapshot(*dest, *timestamp, *link, *createRepo, *workers); err != nil {
 					failedSources = append(failedSources, source)
 					gym.Log.Crit("could not create snapshot", "err", err)
 				}
