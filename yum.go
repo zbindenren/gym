@@ -256,7 +256,7 @@ func (r *Repo) Snapshot(dest string, link bool, createRepo bool, numWorkers int)
 		if res.err != nil {
 			Log.Error(path.Base(res.rpm.relPath), "status", res.status, "workerid", res.workerID, "err", res.err)
 		} else {
-			Log.Info(ellipsis(path.Base(res.rpm.relPath), 40), "mode", mode, "err", res.err, "workerid", res.workerID)
+			Log.Debug(ellipsis(path.Base(res.rpm.relPath), 40), "mode", mode, "err", res.err, "workerid", res.workerID)
 		}
 	}
 
