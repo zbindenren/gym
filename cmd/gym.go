@@ -24,6 +24,7 @@ func main() {
 	numCPU := runtime.NumCPU()
 	gymcmd := cli.App("gym", "golang yum mirror")
 	debug := gymcmd.Bool(cli.BoolOpt{Name: "d debug", Desc: "show debug messages"})
+	timeout := gymcmd.String(cli.StringOpt{Name: "t timout", Desc: "timeout", Value: "5s"})
 	meta := gymcmd.Bool(cli.BoolOpt{Name: "m meta", Desc: "sync only meta data"})
 	nocolor := gymcmd.Bool(cli.BoolOpt{Name: "n nocolor", Desc: "disable color output"})
 	insecure := gymcmd.Bool(cli.BoolOpt{Name: "i insecure", Desc: "do not verify ssl certificates"})
@@ -79,7 +80,11 @@ func main() {
 					gym.Log.Crit("could not configure https transport", "err", err)
 				}
 			}
-			r := gym.NewRepo(*dest, *urlString, t)
+			to, err := time.ParseDuration(*timeout)
+			if err != nil {
+				gym.Log.Crit("invalid timout duration", "err", err, "duration", timeout)
+			}
+			r := gym.NewRepo(*dest, *urlString, t, to)
 
 			gym.Log.Info("start metadata sync", "url", *urlString, "dest", *dest, "workers", *workers)
 			if err := r.SyncMeta(); err != nil {
@@ -145,7 +150,11 @@ func main() {
 			skippedRepositories := []string{}
 			syncedRepositories := []string{}
 			gym.Log.Info("parsing repofile", "file", *repo)
-			repos, err := gym.NewRepoList(*repo, *dest, *insecure, *release, *arch)
+			to, err := time.ParseDuration(*timeout)
+			if err != nil {
+				gym.Log.Crit("invalid timout duration", "err", err, "duration", timeout)
+			}
+			repos, err := gym.NewRepoList(*repo, *dest, *insecure, *release, *arch, to)
 			if err != nil {
 				gym.Log.Crit("could not create repolist", "repofile", *repo, "err", err)
 			}
@@ -245,7 +254,7 @@ func main() {
 			start := time.Now()
 			failedSources := []string{}
 			for _, source := range *sources {
-				r := gym.NewRepo(source, "", nil)
+				r := gym.NewRepo(source, "", nil, time.Second)
 				if err := r.Snapshot(*dest, *timestamp, *link, *createRepo, *workers); err != nil {
 					failedSources = append(failedSources, source)
 					gym.Log.Crit("could not create snapshot", "err", err)
@@ -286,7 +295,11 @@ func main() {
 		)
 		cmd.Action = func() {
 			gym.Log.Info("parsing repofile", "file", *repo)
-			repos, err := gym.NewRepoList(*repo, *dest, *insecure, *release, *arch)
+			to, err := time.ParseDuration(*timeout)
+			if err != nil {
+				gym.Log.Crit("invalid timout duration", "err", err, "duration", timeout)
+			}
+			repos, err := gym.NewRepoList(*repo, *dest, *insecure, *release, *arch, to)
 			if err != nil {
 				gym.Log.Crit("could not create repolist", "repofile", *repo, "err", err)
 			}

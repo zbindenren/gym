@@ -70,12 +70,13 @@ type Repo struct {
 }
 
 // NewRepo creates a new repository
-func NewRepo(local string, remote string, transport *http.Transport) *Repo {
+func NewRepo(local string, remote string, transport *http.Transport, to time.Duration) *Repo {
 	l := strings.TrimRight(local, "/")
 	r := strings.TrimRight(remote, "/")
 	client := new(http.Client)
+	client.Timeout = to
 	if transport != nil {
-		client = &http.Client{Transport: transport}
+		client = &http.Client{Transport: transport, Timeout: to}
 	}
 	repo := Repo{
 		Client:    client,
@@ -101,7 +102,7 @@ func (rl RepoList) Find(name string) *Repo {
 }
 
 // NewRepoList creates an new RepoList
-func NewRepoList(pathToYumConf string, dest string, insecure bool, release string, baseArch string) (RepoList, error) {
+func NewRepoList(pathToYumConf string, dest string, insecure bool, release string, baseArch string, to time.Duration) (RepoList, error) {
 	repos := RepoList{}
 	cfg, err := ini.Load(pathToYumConf)
 	if err != nil {
@@ -118,7 +119,7 @@ func NewRepoList(pathToYumConf string, dest string, insecure bool, release strin
 			if err != nil {
 				return repos, err
 			}
-			r := NewRepo(path.Join(dest, s.Name()), url, transport)
+			r := NewRepo(path.Join(dest, s.Name()), url, transport, to)
 			r.Name = s.Name()
 			enabled, err := s.Key("enabled").Int()
 			if err == nil {

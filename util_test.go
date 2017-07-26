@@ -99,7 +99,7 @@ func TestCopyDirRel(t *testing.T) {
 
 func teardown() {
 	os.RemoveAll("/tmp/repo")
-	os.RemoveAll(snapshotDir)
+	// os.RemoveAll(snapshotDir)
 	os.RemoveAll("/tmp/testdata")
 	os.Remove("/tmp/LibRaw-0.14.8-5.el7.20120830git98d925.x86_64.rpm")
 }
