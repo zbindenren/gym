@@ -434,7 +434,7 @@ func (r *Repo) download(url string, dest string, checksum string, shaType string
 	return size, nil
 }
 
-// download url and verify checksum of downloaded file, if shaType is empty no verification is done
+// Download url and verify checksum of downloaded file, if shaType is empty no verification is done
 func (r *Repo) Download(url string, dest string) (int64, error) {
 	if err := os.MkdirAll(path.Dir(dest), 0755); err != nil {
 		return 0, err
@@ -449,7 +449,9 @@ func (r *Repo) Download(url string, dest string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	// req.Header.Add("Accept-Encoding", "gzip") //otherwise the client decompresses *.gz files, that is not what we want
+	if filepath.Ext(url) == ".gz" {
+		req.Header.Add("Accept-Encoding", "gzip") //otherwise the client decompresses *.gz files, that is not what we want
+	}
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		return 0, err
