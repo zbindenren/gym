@@ -19,9 +19,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/xi2/xz"
 	"gopkg.in/inconshreveable/log15.v2"
-
-	"xi2.org/x/xz"
 )
 
 // ProcessSQLFunc is the function type called for the rows created by processSqlite.

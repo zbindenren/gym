@@ -7,4 +7,4 @@ import:
   version: ~2.11.0
 - package: gopkg.in/ini.v1
   version: ~1.28.0
-- package: xi2.org/x/xz
+- package: github.com/xi2/xz
