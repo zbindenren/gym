@@ -1,6 +1,15 @@
 project_name: gym
 release:
-  disable: true
+  # Repo in which the release will be created.
+  # Default is extracted from the origin remote URL.
+  github:
+    owner: zbindenren
+    name: gym
+  # name_template: "{{.ProjectName}}-v{{.Version}} {{.Env.USER}}"
+
+  # You can disable this pipe in order to not upload any artifacts to
+  # GitHub.
+  # Defaults to false.
 builds:
 - env:
   - CGO_ENABLED=0
