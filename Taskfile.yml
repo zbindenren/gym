@@ -1,22 +1,7 @@
-deps:
-  cmds:
-    - glide install
-  generates:
-    - vendor/
-  sources:
-    - glide.yaml
-    - glide.lock
-
-build-fast:
-  desc: run this task to make compiling fast again
-  deps: [deps]
-  cmds:
-    - cd cmd; go build -i -v
-
 build: &build
-  deps:
-    - deps
   desc: build gym binary
+  vars:
+    GO111MODULE: 'on'
   sources:
     - cmd/main.go
     - './*.go'
