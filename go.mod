@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/jawher/mow.cli v1.0.4 // indirect
+	github.com/jawher/mow.cli v1.0.4
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0
