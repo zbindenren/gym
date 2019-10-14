@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
@@ -180,6 +181,8 @@ func checksumOK(pathToFile string, checksumType string, checksum string) bool {
 	switch checksumType {
 	case "sha256":
 		calculatedChecksum = fmt.Sprintf("%x", sha256.Sum256(fh))
+	case "sha512":
+		calculatedChecksum = fmt.Sprintf("%x", sha512.Sum512(fh))
 	default:
 
 		calculatedChecksum = fmt.Sprintf("%x", sha1.Sum(fh))
