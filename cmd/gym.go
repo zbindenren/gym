@@ -312,7 +312,7 @@ func main() {
 			url := fmt.Sprintf("https://cdn.redhat.com/content/dist/rhel/server/%s/%sServer/%s/iso/%s", string((*release)[0]), string((*release)[0]), *arch, isoFileName)
 
 			// url changed for rhel8
-			if strings.HasSuffix(*release, "8") || strings.HasPrefix(*release, "8") {
+			if strings.HasPrefix(*release, "8") {
 				isoFileName = fmt.Sprintf("rhel-%s-%s-boot.iso", *release, *arch)
 				url = fmt.Sprintf("https://cdn.redhat.com/content/dist/rhel8/%s/%s/baseos/iso/%s", string((*release)[0]), *arch, isoFileName)
 			}
