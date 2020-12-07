@@ -20,33 +20,33 @@ builds:
   goarch:
     - amd64
   main: ./cmd/gym.go
-archive:
-  format: zip
-  name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}-{{ .Version }}"
-  replacements:
-    amd64: x86_64
-nfpm:
-  formats:
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}-{{ .Version }}"
+    replacements:
+      amd64: x86_64
+nfpms:
+  - formats:
     - rpm
-  vendor: "Rene Zbinden"
-  homepage: "https://github.com/zbindenren/gym"
-  maintainer: "Rene Zbinden <rene.zbinden@postfinance.ch>"
-  description: "Golang YUM Mirror"
-  license: "Apache 2.0"
-  bindir: /usr/bin
-  name_template: "{{.ProjectName}}-{{.Version}}.el7.{{.Arch}}"
-  replacements:
-    amd64: x86_64
-    386: 32bit
-    arm: ARM
-    arm64: ARM64
-    darwin: macOS
-    linux: Linux
-    windows: Windows
-    openbsd: OpenBSD
-    netbsd: NetBSD
-    freebsd: FreeBSD
-    dragonfly: DragonFlyBSD
+    vendor: "Rene Zbinden"
+    homepage: "https://github.com/zbindenren/gym"
+    maintainer: "Rene Zbinden <rene.zbinden@postfinance.ch>"
+    description: "Golang YUM Mirror"
+    license: "Apache 2.0"
+    bindir: /usr/bin
+    file_name_template: "{{.ProjectName}}-{{.Version}}.el7.{{.Arch}}"
+    replacements:
+      amd64: x86_64
+      386: 32bit
+      arm: ARM
+      arm64: ARM64
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+      openbsd: OpenBSD
+      netbsd: NetBSD
+      freebsd: FreeBSD
+      dragonfly: DragonFlyBSD
 checksum:
   name_template: 'checksums.txt'
 snapshot:
